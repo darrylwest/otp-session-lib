@@ -79,7 +79,9 @@ mod tests {
 
     #[test]
     fn create_user_otp() {
-        let mut otp = create_otp();
+        let mut otp = Otp {
+            ..Default::default()
+        };
         let user = "sally";
         assert_eq!(otp.dbsize(), 0);
         let resp = otp.create_user_otp(user);
