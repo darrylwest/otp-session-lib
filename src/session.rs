@@ -1,6 +1,6 @@
 use crate::db::{DataStore, SessionItem};
 use anyhow::Result;
-use log::info;
+use log::debug;
 
 #[derive(Debug, Clone)]
 pub struct Session {
@@ -36,7 +36,7 @@ impl Session {
     /// create a user session and return the session code or error
     pub fn create_user_session(&mut self, user: &str) -> Result<String> {
         let code = self.generate_code();
-        info!("user: {}, code: {}", user, &code);
+        debug!("user: {}, code: {}", user, &code);
 
         let ss = SessionItem::new(code.as_str(), user, self.keep_alive);
         self.db.put(ss)?;
@@ -52,7 +52,7 @@ impl Session {
 
     /// remove the user session
     pub fn remove(&mut self, code: &str, user: &str) -> Option<String> {
-        info!("remove user session: {}:{}", code, user);
+        debug!("remove user session: {}:{}", code, user);
         if self.db.remove(code, user) {
             Some(code.to_string())
         } else {

@@ -1,7 +1,7 @@
 /// otp generator
 use crate::db::{DataStore, SessionItem};
 use anyhow::Result;
-use log::info;
+use log::debug;
 
 #[derive(Debug, Clone)]
 pub struct Otp {
@@ -33,7 +33,7 @@ impl Otp {
     /// create a new user otp and store it with standard expiration timestamp
     pub fn create_user_otp(&mut self, user: &str) -> Result<String> {
         let code = self.generate_code();
-        info!("user: {}, code: {}", user, &code);
+        debug!("user: {}, code: {}", user, &code);
 
         let ss = SessionItem::new(code.as_str(), user, self.keep_alive);
         self.db.put(ss)?;
@@ -43,14 +43,14 @@ impl Otp {
 
     /// validate this otp for the given user
     pub fn is_valid(&self, code: &str, user: &str) -> bool {
-        info!("validate: {}:{}", code, user);
+        debug!("validate: {}:{}", code, user);
         let resp = self.db.get(code, user);
         resp.is_some()
     }
 
     /// remove the code for this user
     pub fn remove(&mut self, code: &str, user: &str) -> Option<String> {
-        info!("remove otp {}:{}", code, user);
+        debug!("remove otp {}:{}", code, user);
         if self.db.remove(code, user) {
             Some(code.to_string())
         } else {
