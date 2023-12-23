@@ -76,7 +76,9 @@ mod tests {
 
     #[test]
     fn create_user_session() {
-        let mut session = create_session();
+        let mut session = Session {
+            ..Default::default()
+        };
         assert_eq!(session.dbsize(), 0);
         let user = "sally";
         let resp = session.create_user_session(user);
