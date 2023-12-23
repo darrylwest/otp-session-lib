@@ -1,7 +1,7 @@
 /// otp generator
 use crate::db::{DataStore, SessionItem};
-use anyhow::{anyhow, Result};
-use log::{error, info};
+use anyhow::Result;
+use log::info;
 
 #[derive(Debug, Clone)]
 pub struct Otp {
@@ -36,14 +36,9 @@ impl Otp {
         info!("user: {}, code: {}", user, &code);
 
         let ss = SessionItem::new(code.as_str(), user, self.keep_alive);
-        match self.db.put(ss) {
-            Ok(_) => Ok(code),
-            Err(e) => {
-                let msg = format!("error saving session item: {}", e);
-                error!("{}", msg);
-                Err(anyhow!("{}", msg))
-            }
-        }
+        self.db.put(ss)?;
+
+        Ok(code)
     }
 
     /// validate this otp for the given user

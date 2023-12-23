@@ -1,6 +1,6 @@
 use crate::db::{DataStore, SessionItem};
-use anyhow::{anyhow, Result};
-use log::{error, info};
+use anyhow::Result;
+use log::info;
 
 #[derive(Debug, Clone)]
 pub struct Session {
@@ -39,14 +39,9 @@ impl Session {
         info!("user: {}, code: {}", user, &code);
 
         let ss = SessionItem::new(code.as_str(), user, self.keep_alive);
-        match self.db.put(ss) {
-            Ok(_) => Ok(code),
-            Err(e) => {
-                let msg = format!("error saving session item: {}", e);
-                error!("{}", msg);
-                Err(anyhow!("{}", msg))
-            }
-        }
+        self.db.put(ss)?;
+
+        Ok(code)
     }
 
     /// return true if the session is still valid
