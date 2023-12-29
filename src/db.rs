@@ -1,6 +1,7 @@
-/// db common to otp and session
+/// a thread safe in-memory db common to otp and session
 use anyhow::Result;
 use hashbrown::HashMap;
+use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
@@ -12,7 +13,7 @@ pub struct SessionItem {
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    db: HashMap<String, u64>,
+    db: Arc<RwLock<HashMap<String, u64>>>,
 }
 
 impl SessionItem {
@@ -37,7 +38,9 @@ impl SessionItem {
 impl DataStore {
     /// create the data store
     pub fn create() -> DataStore {
-        DataStore { db: HashMap::new() }
+        DataStore {
+            db: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     // create the db key
@@ -47,13 +50,15 @@ impl DataStore {
 
     /// return the number of items in the data store
     pub fn dbsize(&self) -> usize {
-        self.db.len()
+        let map = self.db.read().unwrap();
+        map.len()
     }
 
     /// store this in the database
     pub fn put(&mut self, item: SessionItem) -> Result<()> {
         let key = self.create_key(&item.code, &item.user);
-        let _resp = self.db.insert(key, item.expires);
+        let mut map = self.db.write().unwrap();
+        let _resp = map.insert(key, item.expires);
 
         Ok(())
     }
@@ -61,12 +66,15 @@ impl DataStore {
     /// return the session item if it exists and has not expired
     pub fn get(&self, code: &str, user: &str) -> Option<SessionItem> {
         let key = self.create_key(code, user);
-        let value = self.db.get(&key);
-        if value.is_none() {
-            value?;
-        }
+        let value = {
+            let map = self.db.read().unwrap();
+            let value = map.get(&key);
+            if value.is_none() {
+                value?;
+            }
+            *value.unwrap()
+        };
 
-        let value = *value.unwrap();
         let item = SessionItem {
             code: code.to_string(),
             user: user.to_string(),
@@ -83,7 +91,8 @@ impl DataStore {
     /// remove the item; return true if it was removed, false if not found
     pub fn remove(&mut self, code: &str, user: &str) -> bool {
         let key = self.create_key(code, user);
-        let v = self.db.remove(&key);
+        let mut map = self.db.write().unwrap();
+        let v = map.remove(&key);
         v.is_some()
     }
 }
@@ -100,7 +109,6 @@ mod tests {
     #[test]
     fn create() {
         let store = DataStore::create();
-        assert_eq!(store.db.len(), 0);
         assert_eq!(store.dbsize(), 0);
     }
 
